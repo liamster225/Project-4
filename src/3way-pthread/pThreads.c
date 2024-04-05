@@ -24,11 +24,6 @@ char line_largest[ARRAY_SIZE];
 char lines[ARRAY_SIZE][STRING_SIZE];
 FILE *file;
 
-typedef struct{
-    uint32_t virtualMem;
-    uint32_t physicalMem;
-} processMem_t;
-
 int parseLine(char *line) {
 	int i = strlen(line);
 	const char *p = line;
@@ -49,23 +44,6 @@ void readFile()
 	fclose( file );
 }
 
-void GetProcessMemory(processMem_t* processMem) {
-	FILE *file = fopen("/proc/self/status", "r");
-	char line[128];
-
-	while (fgets(line, 128, file) != NULL) {
-		//printf("%s", line);
-		if (strncmp(line, "VmSize:", 7) == 0) {
-			processMem->virtualMem = parseLine(line);
-		}
-
-		if (strncmp(line, "VmRSS:", 6) == 0) {
-			processMem->physicalMem = parseLine(line);
-		}
-	}
-	fclose(file);
-}
-
 char find_largest_char(char* line, int nchars) {
    int i, j;
    char *largest_char = NULL;
@@ -81,12 +59,8 @@ char find_largest_char(char* line, int nchars) {
 
 void *count_array(int myID)
 {
-    char theChar;
-    int i, startPos, endPos, err;
-	int currentLine = 0;
-    char line[STRING_SIZE];
+    int i, startPos, endPos;
 	int nchars;
-	int nlines = 0;
 
 	startPos = myID * (ARRAY_SIZE / num_threads);
 	endPos = startPos + (ARRAY_SIZE / num_threads);
@@ -104,9 +78,7 @@ void *count_array(int myID)
 
 void print_results(int line_largest[])
 {
-  int i,j, total = 0;
-
-  // then print out the totals
+  int i = 0;
   for ( i = 0; i < ARRAY_SIZE; i++ ) {
 	printf("%d: %d\n", i, (int)line_largest[i]);
   }
@@ -121,7 +93,6 @@ main() {
 	void *status;
 	struct timeval t1, t2, t3;
     double timeElapsedTotal;
-    processMem_t memory;
 	
 	pthread_mutex_init(&mutexsum, NULL);
 	
@@ -139,7 +110,7 @@ main() {
 	      rc = pthread_create(&threads[i], &attr, count_array, (void *)i);
 	      if (rc) {
 	        printf("ERROR; return code from pthread_create() is %d\n", rc);
-		exit(-1);
+		    exit(-1);
 	      }
 	}
 	
@@ -155,7 +126,7 @@ main() {
 	
 	gettimeofday(&t2, NULL); 
 
-	print_results(line_avg);
+	print_results((int)line_largest);
 
 	gettimeofday(&t3, NULL); 
 
@@ -168,9 +139,6 @@ main() {
 	
 	printf("Tasks: %s\n Total Elapsed Time: %fms\n", getenv("SLURM_NTASKS"), timeElapsedTotal);
 	printf("DATA, %s,%f\n", getenv("SLURM_NTASKS"), timeElapsedTotal);
-    GetProcessMemory(&memory);
-	
-	printf("size = %d, Node: %s, vMem %u KB, pMem %u KB\n", num_threads, getenv("HOSTNAME"), memory.virtualMem, memory.physicalMem);
 	printf("Main: program completed. Exiting.\n");
 	
 	pthread_exit(NULL);
