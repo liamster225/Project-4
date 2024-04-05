@@ -4,7 +4,7 @@
 #include <string.h>
 
 //#define NUM_THREADS 4
-int NUM_THREADS;
+int num_threads;
 
 #define ARRAY_SIZE 2000000
 #define STRING_SIZE 16
@@ -50,8 +50,8 @@ void *count_array(void *rank)
   int i, j, charLoc;
   int myID =  *((int*) rank);
 
-  int startPos = ((long) myID) * (ARRAY_SIZE / NUM_THREADS);
-  int endPos = startPos + (ARRAY_SIZE / NUM_THREADS);
+  int startPos = ((long) myID) * (ARRAY_SIZE / num_threads);
+  int endPos = startPos + (ARRAY_SIZE / num_threads);
 
   printf("myID = %d startPos = %d endPos = %d \n", myID, startPos, endPos); fflush(stdout);
 
@@ -97,7 +97,7 @@ main(int argc, char* argv[])
         MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
         MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-	NUM_THREADS = numtasks;
+	num_threads = numtasks;
 	printf("size = %d rank = %d\n", numtasks, rank);
 	fflush(stdout);
 
