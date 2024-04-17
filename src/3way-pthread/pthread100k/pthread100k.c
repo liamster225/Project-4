@@ -1,5 +1,5 @@
 /* CIS 520 Proj 4
-	Zach Arensman, Liam Bramley
+	Zach Arensman, Liam Bramley, Alex Bingham
 */
 
 #define _GNU_SOURCE
@@ -11,6 +11,7 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 #include "sys/types.h"
+#include "sys/sysinfo.h"
 
 #define UNUSED(x) (void)(x)
 
@@ -20,6 +21,37 @@ typedef struct threadArgs{
 	long start;
 	long end;
 }threadArgs;
+
+typedef struct processMem_t{
+	int virtualMem;
+	int physicalMem;
+} processMem_t;
+
+int parseLine(char *line) {
+    int i = strlen(line);
+    const char *p = line;
+    while (*p < '0' || *p > '9') p++;
+    line[i - 3] = '\0';
+    i = atoi(p);
+    return i;
+}
+
+//Code Example From: https://gist.github.com/gbmhunter/00c57b55e2616cd8e1f21f77b79e59fc?permalink_comment_id=2707469
+void GetProcessMemory(processMem_t* processMem) {
+	FILE *file = fopen("/proc/self/status", "r");
+	char line[128];
+
+	while (fgets(line, 128, file) != NULL) {
+		if (strncmp(line, "VmSize:", 7) == 0) {
+			processMem->virtualMem = parseLine(line);
+		}
+
+		if (strncmp(line, "VmRSS:", 6) == 0) {
+			processMem->physicalMem = parseLine(line);
+		}
+	}
+	fclose(file);
+}
 
 int line_array[NUMLINES]; //hold ASCII values found
 
@@ -90,8 +122,8 @@ int main() {
     double timeElapsedTotal;
     double timePthreads;
 	double timePrint;
-
-	long memusage;
+	
+    processMem_t myMem; 
 
 	long startPos = 0;
 
@@ -118,10 +150,6 @@ int main() {
 	//Create threads
 	for (i = 0; i < num_threads; i++ ) {
 	    pthread_create(&threads[i], &attr, get_largest_ascii, (void*)&threadArguments[i]);
-	    //get resource usage
-  		struct rusage usage;
-  		getrusage(RUSAGE_THREAD, &usage);
-  		memusage = usage.ru_maxrss;
 	}
 
 	//Free attribute and wait for the other threads
@@ -146,9 +174,10 @@ int main() {
     timeElapsedTotal = (t4.tv_sec - t1.tv_sec) * 1000.0; //Converted to milliseconds
     timeElapsedTotal += (t4.tv_usec - t1.tv_usec) / 1000.0;
 	
+	GetProcessMemory(&myMem);
+
 	printf("\nCores / Threads: %d\n\n", num_threads);
-	printf("Maximum Memory Usage(kB): %ld\n", memusage);
-	printf("Maximum Memory Usage Per Thread(kB): %ld\n", (memusage / num_threads));
+	printf("Virtual Memory: %ukB\nPhysical Memory: %ukB\n", myMem.virtualMem, myMem.physicalMem);
 	printf("\nTime Pthreads: %fms\n", timePthreads);
 	printf("Time Print: %fms\n", timePrint);
 	printf("Total Time Elapsed: %fms\n", timeElapsedTotal);
