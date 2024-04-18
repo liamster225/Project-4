@@ -42,7 +42,6 @@ void GetProcessMemory(processMem_t* processMem) {
 			processMem->physicalMem = parseLine(line);
 		}
 	}
-	fclose(file);
 }
 
 int find_largest_ascii(char* line, int length)
@@ -84,8 +83,6 @@ void* get_largest_ascii(void* threadArguments, FILE* fd)
 		currentline += 1;
   	}
 
-	fclose(fd);
-
    return NULL;
 }
 
@@ -103,12 +100,16 @@ main(int argc, char *argv[])
 	num_threads = atoi(getenv("SLURM_CPUS_ON_NODE"));
 
 	/* Time variables. */
-	struct timeval t1, t2;
+	struct timeval t1, t2, t3, t4;
 	double timeElapsedTotal;
+	double timeMpi;
+	double timePrint;
 	
 	int rc;
 	int rank, numtasks;
     processMem_t myMem; 
+
+	gettimeofday(&t1, NULL);
 
     FILE* fd;
 	fd = fopen("/homes/dan/625/wiki_dump.txt", "r"); //Open file 
@@ -126,7 +127,7 @@ main(int argc, char *argv[])
     /* Start performance */
     if(rank == 0)
     {
-		gettimeofday(&t1, NULL);
+		gettimeofday(&t2, NULL);
 		printf("DEBUG: starting time on %s\n", getenv("HOSTNAME"));
     }
 
@@ -154,7 +155,7 @@ main(int argc, char *argv[])
 			currentLine++;
 		}
 
-		fseek(d, 0, SEEK_SET);	
+		fseek(fd, 0, SEEK_SET);	
 	}
 	MPI_Bcast(thread_locations, num_threads, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
@@ -166,17 +167,32 @@ main(int argc, char *argv[])
 	/* Print results and record important data */
 	if(rank == 0)
 	{
-		printResults();
-		gettimeofday(&t2, NULL);
-		timeElapsedTotal = (t2.tv_sec - t1.tv_sec) * 1000.0; // Convert to ms
-		timeElapsedTotal += (t2.tv_usec - t1.tv_usec) / 1000.0; // Convert to ms
+		
+		gettimeofday(&t3, NULL); 
+
+		print_results();
+
+		gettimeofday(&t4, NULL); 
+
+		timeMpi = (t3.tv_sec - t2.tv_sec) * 1000.0; //Converted to milliseconds
+    	timeMpi += (t3.tv_usec - t2.tv_usec) / 1000.0;
+
+		timePrint = (t4.tv_sec - t3.tv_sec) * 1000.0; //Converted to milliseconds
+    	timePrint += (t4.tv_usec - t3.tv_usec) / 1000.0;
+
+    	timeElapsedTotal = (t4.tv_sec - t1.tv_sec) * 1000.0; //Converted to milliseconds
+    	timeElapsedTotal += (t4.tv_usec - t1.tv_usec) / 1000.0;
+
 			/* Performance metrics. */	
         GetProcessMemory(&myMem);
-		printf("size = %d rank = %d, Node: %s, vMem %u KB, pMem %u KB\n", numtasks, rank, getenv("HOSTNAME"), myMem.virtualMem, myMem.physicalMem);
-		printf("Tasks: %s, Elapsed Time: %fms\n",  getenv("SLURM_NTASKS"),  timeElapsedTotal);
-		printf("DATA, %s,%fms\n", getenv("SLURM_NTASKS"), timeElapsedTotal);
+		printf("\nCores / Threads: %d\n\n", num_threads);
+		printf("Virtual Memory: %ukB\nPhysical Memory: %ukB\n", myMem.virtualMem, myMem.physicalMem);
+		printf("\nTime Pthreads: %fms\n", timeMpi);
+		printf("Time Print: %fms\n", timePrint);
+		printf("Total Time Elapsed: %fms\n", timeElapsedTotal);
+		printf("\nMain: program completed. Exiting.\n");
 	}
-
+	fclose(fd);
 	MPI_Finalize();
 	return 0;
 }
