@@ -11,10 +11,13 @@
 #include "sys/types.h"
 #include "sys/sysinfo.h"
 #include <math.h>
+#include <sys/resource.h>
 
+#define MAXIMUM_TASKS 32
 #define STRING_SIZE 2001
 #define NUMLINES 1000000
 
+unsigned int thread_locations[MAXIMUM_TASKS];
 int line_array[NUMLINES]; //hold ASCII values found
 int final_array[NUMLINES]; //hold ASCII values found
 int num_threads = 1; //default 1, will be set by slurm
@@ -42,6 +45,8 @@ void GetProcessMemory(processMem_t* processMem) {
 			processMem->physicalMem = parseLine(line);
 		}
 	}
+
+	fclose(file);
 }
 
 int find_largest_ascii(char* line, int length)
@@ -60,30 +65,34 @@ int find_largest_ascii(char* line, int length)
 	 return max_val; //return max ascii val
 }
 
-void* get_largest_ascii(void* threadArguments, FILE* fd)
+void* get_largest_ascii(int rank, FILE* fd)
 {
 
-    size_t len = 0;
-    char* line = NULL;
+	char tempBuffer[STRING_SIZE];
+	int currentLine = rank * (NUMLINES/num_threads);
 
-	long currentline = ((threadArgs*)threadArguments)->start; 
+	fseek(fd, thread_locations[rank], SEEK_SET);
 	
-	long linestoRead = ((threadArgs*)threadArguments)->end - ((threadArgs*)threadArguments)->start;
-
-	for(int i = 0; i < currentline; i++){ //Move to start position for thread
-		getline(NULL,NULL,fd);
+	/* While not at EOF and not beyond assigned section ... */
+	while(currentLine < (rank+1) * (NUMLINES/num_threads)
+		&& fscanf(fp, "%[^\n]\n", tempBuffer) != EOF)
+	{
+			/* Find and save average of line of char locally */
+			int lineLength = strlen(tempBuffer);
+			line_array[currentLine] = find_largest_ascii(tempBuffer, lineLength);
+			currentLine++;
 	}
 
-	//Read numlines for this thread
-	//printf("start: %ld, end %ld, lines to read %ld\n", ((threadArgs*)threadArguments)->start, ((threadArgs*)threadArguments)->end, linestoRead);
-	for(int i = 0; i < linestoRead; i++)
-	{ 
-		getline(&line, &len, fd);
-		line_array[currentline] = find_largest_ascii(line, len);
-		currentline += 1;
-  	}
-
    return NULL;
+}
+
+int parseLine(char *line) {
+    int i = strlen(line);
+    const char *p = line;
+    while (*p < '0' || *p > '9') p++;
+    line[i - 3] = '\0';
+    i = atoi(p);
+    return i;
 }
 
 void print_results()
@@ -94,7 +103,7 @@ void print_results()
   };
 }
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     long i;
 	num_threads = atoi(getenv("SLURM_CPUS_ON_NODE"));
