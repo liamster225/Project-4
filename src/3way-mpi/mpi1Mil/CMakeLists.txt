@@ -4,8 +4,11 @@ project(mpi)
 set(CMAKE_C_FLAGS "-std=c11 -Wall -Wextra -Wshadow -Werror -D_XOPEN_SOURCE=500")
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wextra -Wshadow -Werror -Wno-sign-compare -D_XOPEN_SOURCE=500")
 
+find_package(MPI REQUIRED)
+
+include_directories(SYSTEM ${MPI_INCLUDE_PATH})
+
 # make an executable
 add_executable(mpi10 mpi1Mil.c)
-
-target_compile_definitions(mpi10 PRIVATE)
+target_link_libraries(mpi10 ${MPI_LIBRARIES})
 

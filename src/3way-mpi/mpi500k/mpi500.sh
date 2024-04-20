@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --mem-per-cpu=512M
+#SBATCH --mem-per-cpu=1G
 
 #SBATCH --time=1:00:00
 
@@ -9,6 +9,6 @@
 
 #SBATCH --constraint=moles
 
-#SBATCH --output=mpi500k1Node1Thread.out
+#SBATCH --output=mpi1Mil1Thread.out
 
-/homes/zarensman/hw4/3way-mpi/mpi500k/build/mpi5
+mpirun -n 1 /homes/zarensman/hw4/3way-mpi/mpi500k/build/mpi5

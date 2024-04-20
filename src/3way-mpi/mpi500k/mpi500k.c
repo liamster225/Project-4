@@ -2,6 +2,8 @@
 	Zach Arensman, Liam Bramley
 */
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,10 +13,13 @@
 #include "sys/types.h"
 #include "sys/sysinfo.h"
 #include <math.h>
+#include <sys/resource.h>
 
+#define MAXIMUM_TASKS 32
 #define STRING_SIZE 2001
 #define NUMLINES 500000
 
+unsigned int thread_locations[MAXIMUM_TASKS];
 int line_array[NUMLINES]; //hold ASCII values found
 int final_array[NUMLINES]; //hold ASCII values found
 int num_threads = 1; //default 1, will be set by slurm
@@ -29,6 +34,16 @@ typedef struct {
 	uint32_t physicalMem;
 } processMem_t;
 
+
+int parseLine(char *line) {
+    int i = strlen(line);
+    const char *p = line;
+    while (*p < '0' || *p > '9') p++;
+    line[i - 3] = '\0';
+    i = atoi(p);
+    return i;
+}
+
 void GetProcessMemory(processMem_t* processMem) {
 	FILE *file = fopen("/proc/self/status", "r");
 	char line[128];
@@ -42,6 +57,8 @@ void GetProcessMemory(processMem_t* processMem) {
 			processMem->physicalMem = parseLine(line);
 		}
 	}
+
+	fclose(file);
 }
 
 int find_largest_ascii(char* line, int length)
@@ -60,22 +77,24 @@ int find_largest_ascii(char* line, int length)
 	 return max_val; //return max ascii val
 }
 
-void* get_largest_ascii(void* threadArguments, FILE* fd)
+void* get_largest_ascii(int rank, FILE* fd)
 {
+	int myID =  rank;
+	
+	fd = fopen("/homes/dan/625/wiki_dump.txt", "r"); //Open file 
 
     size_t len = 0;
     char* line = NULL;
 
-	long currentline = ((threadArgs*)threadArguments)->start; 
+	long currentline = ((long) myID) * (NUMLINES / num_threads); 
 	
-	long linestoRead = ((threadArgs*)threadArguments)->end - ((threadArgs*)threadArguments)->start;
+	long linestoRead = (NUMLINES / num_threads);
 
 	for(int i = 0; i < currentline; i++){ //Move to start position for thread
 		getline(NULL,NULL,fd);
 	}
 
 	//Read numlines for this thread
-	//printf("start: %ld, end %ld, lines to read %ld\n", ((threadArgs*)threadArguments)->start, ((threadArgs*)threadArguments)->end, linestoRead);
 	for(int i = 0; i < linestoRead; i++)
 	{ 
 		getline(&line, &len, fd);
@@ -94,7 +113,7 @@ void print_results()
   };
 }
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     long i;
 	num_threads = atoi(getenv("SLURM_CPUS_ON_NODE"));
@@ -187,7 +206,7 @@ main(int argc, char *argv[])
         GetProcessMemory(&myMem);
 		printf("\nCores / Threads: %d\n\n", num_threads);
 		printf("Virtual Memory: %ukB\nPhysical Memory: %ukB\n", myMem.virtualMem, myMem.physicalMem);
-		printf("\nTime Pthreads: %fms\n", timeMpi);
+		printf("\nTime MPI: %fms\n", timeMpi);
 		printf("Time Print: %fms\n", timePrint);
 		printf("Total Time Elapsed: %fms\n", timeElapsedTotal);
 		printf("\nMain: program completed. Exiting.\n");

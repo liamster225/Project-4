@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#SBATCH --mem-per-cpu=512M
+#SBATCH --mem-per-cpu=1G
 
 #SBATCH --time=1:00:00
 
 ##Nodes tells how many machines / how many cores
-#SBATCH --nodes=1 --ntasks-per-node=1
+#SBATCH --nodes=1 --ntasks-per-node=20
 
 #SBATCH --constraint=moles
 
-#SBATCH --output=mpi1Mil1Node1Thread.out
+#SBATCH --output=mpi1Mil20Thread.out
 
-/homes/zarensman/hw4/3way-mpi/mpi1Mil/build/mpi10
+mpirun -n 20 /homes/zarensman/hw4/3way-mpi/mpi1Mil/build/mpi10

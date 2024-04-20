@@ -9,6 +9,6 @@
 
 #SBATCH --constraint=moles
 
-#SBATCH --output=mpi100k1Node1Thread.out
+#SBATCH --output=mpi100k1Thread.out
 
-/homes/zarensman/hw4/3way-mpi/mpi100k/build/mpi1
+mpirun -n 1 /homes/zarensman/hw4/3way-mpi/mpi100k/build/mpi1

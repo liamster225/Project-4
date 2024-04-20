@@ -36,6 +36,7 @@ int parseLine(char *line) {
     return i;
 }
 
+//Code Example From: https://gist.github.com/gbmhunter/00c57b55e2616cd8e1f21f77b79e59fc?permalink_comment_id=2707469
 void GetProcessMemory(processMem_t* processMem) {
 	FILE *file = fopen("/proc/self/status", "r");
 	char line[128];
