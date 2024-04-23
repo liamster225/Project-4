@@ -9,6 +9,6 @@ find_package(MPI REQUIRED)
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
 # make an executable
-add_executable(mpi5 mpi1Mil.c)
+add_executable(mpi5 mpi500k.c)
 target_link_libraries(mpi5 ${MPI_LIBRARIES})
 

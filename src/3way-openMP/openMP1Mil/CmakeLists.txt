@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.5)
 project(openMP)
 
 # Set compiler flags with OpenMP support
@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Make an executable
-add_executable(openMP3 openMP1Mil.c)
+add_executable(openMP10 openMP1Mil.c)
 
 # Optionally, you can define any compile definitions if needed
-target_compile_definitions(openMP3 PRIVATE)
+target_compile_definitions(openMP10 PRIVATE)

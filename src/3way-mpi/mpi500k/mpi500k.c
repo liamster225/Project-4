@@ -83,10 +83,9 @@ void* get_largest_ascii(int rank, FILE* fd)
 	
 	fd = fopen("/homes/dan/625/wiki_dump.txt", "r"); //Open file 
 
-	char tempBuffer[STRING_SIZE];
-	int currentLine = rank * (NUMLINES/num_threads);
+    size_t len = 0;
+    char* line = NULL;
 
-<<<<<<< HEAD
 	long currentline = ((long) myID) * (NUMLINES / num_threads); 
 	
 	long linestoRead = (NUMLINES / num_threads);
@@ -103,30 +102,7 @@ void* get_largest_ascii(int rank, FILE* fd)
 		currentline += 1;
   	}
 
-=======
-	fseek(fd, thread_locations[rank], SEEK_SET);
-	
-	/* While not at EOF and not beyond assigned section ... */
-	while(currentLine < (rank+1) * (NUMLINES/num_threads)
-		&& fscanf(fp, "%[^\n]\n", tempBuffer) != EOF)
-	{
-			/* Find and save average of line of char locally */
-			int lineLength = strlen(tempBuffer);
-			line_array[currentLine] = find_largest_ascii(tempBuffer, lineLength);
-			currentLine++;
-	}
-
->>>>>>> a588bbad1b676f6a2ced3c41d91a889ace3b8a22
    return NULL;
-}
-
-int parseLine(char *line) {
-    int i = strlen(line);
-    const char *p = line;
-    while (*p < '0' || *p > '9') p++;
-    line[i - 3] = '\0';
-    i = atoi(p);
-    return i;
 }
 
 void print_results()
